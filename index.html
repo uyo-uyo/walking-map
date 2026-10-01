@@ -3,18 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>歩いた土地マップ</title>
 
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  >
 
   <style>
     body {
       margin: 0;
       font-family: sans-serif;
-      background: #f5f5f5;
+      background: #111;
+      color: white;
     }
 
     h1 {
@@ -30,6 +32,30 @@
     #map {
       height: 70vh;
       width: 100%;
+      position: relative;
+    }
+
+    /* 黒い霧 */
+    #fog {
+      position: absolute;
+      inset: 0;
+      z-index: 500;
+      background: rgba(0, 0, 0, 0.96);
+
+      pointer-events: none;
+
+      /* GPSで開いた場所 */
+      -webkit-mask-image: radial-gradient(
+        circle 0px at 50% 50%,
+        transparent 0%,
+        black 100%
+      );
+
+      mask-image: radial-gradient(
+        circle 0px at 50% 50%,
+        transparent 0%,
+        black 100%
+      );
     }
 
     .buttons {
@@ -47,17 +73,12 @@
     }
 
     #startBtn {
-      background: #4caf50;
-      color: white;
-    }
-
-    #locationBtn {
-      background: #2196f3;
+      background: #32a852;
       color: white;
     }
 
     #resetBtn {
-      background: #777;
+      background: #555;
       color: white;
     }
   </style>
@@ -68,52 +89,95 @@
   <h1>🚶 歩いた土地マップ</h1>
 
   <div id="info">
-    歩いた距離：<span id="distance">0</span> m
-   　
-    塗った地点：<span id="points">0</span>
+    探索距離：
+    <span id="distance">0</span> m
   </div>
 
-  <div id="map"></div>
+  <div id="map">
+
+    <!-- 本物の地図 -->
+    <div id="realMap" style="height:100%;"></div>
+
+    <!-- 黒い霧 -->
+    <div id="fog"></div>
+
+  </div>
 
   <div class="buttons">
-    <button id="startBtn">歩き始める</button>
-    <button id="locationBtn">現在地へ</button>
-    <button id="resetBtn">リセット</button>
+
+    <button id="startBtn">
+      歩き始める
+    </button>
+
+    <button id="resetBtn">
+      リセット
+    </button>
+
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // 東京駅を最初の表示位置にする
-    const map = L.map("map").setView([35.681236, 139.767125], 15);
 
-    // OpenStreetMap
+    // =========================
+    // 地図
+    // =========================
+
+    const map = L.map("realMap").setView(
+      [35.681236, 139.767125],
+      15
+    );
+
     L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
-        attribution: "&copy; OpenStreetMap contributors"
+        attribution:
+          "&copy; OpenStreetMap contributors"
       }
     ).addTo(map);
 
+
+    // =========================
+    // GPS
+    // =========================
+
     let watchId = null;
+
     let walking = false;
+
     let lastPosition = null;
+
     let totalDistance = 0;
 
-    // 歩いた場所を入れるレイヤー
-    const walkedLayer = L.layerGroup().addTo(map);
 
-    // 現在地マーカー
-    let currentMarker = null;
+    // =========================
+    // 歩いた場所
+    // =========================
 
+    const exploredPoints = [];
+
+
+    // =========================
     // 距離計算
-    function calculateDistance(lat1, lon1, lat2, lon2) {
+    // =========================
+
+    function calculateDistance(
+      lat1,
+      lon1,
+      lat2,
+      lon2
+    ) {
+
       const R = 6371000;
 
-      const rad = Math.PI / 180;
+      const rad =
+        Math.PI / 180;
 
-      const dLat = (lat2 - lat1) * rad;
-      const dLon = (lon2 - lon1) * rad;
+      const dLat =
+        (lat2 - lat1) * rad;
+
+      const dLon =
+        (lon2 - lon1) * rad;
 
       const a =
         Math.sin(dLat / 2) ** 2 +
@@ -121,191 +185,311 @@
         Math.cos(lat2 * rad) *
         Math.sin(dLon / 2) ** 2;
 
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const c =
+        2 *
+        Math.atan2(
+          Math.sqrt(a),
+          Math.sqrt(1 - a)
+        );
 
       return R * c;
     }
 
-    // GPS成功
-    function success(position) {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
 
-      // 現在地マーカー
-      if (currentMarker) {
-        currentMarker.setLatLng([lat, lon]);
-      } else {
-        currentMarker = L.marker([lat, lon])
-          .addTo(map)
-          .bindPopup("現在地");
+    // =========================
+    // 黒い霧を更新
+    // =========================
+
+    function updateFog() {
+
+      if (exploredPoints.length === 0) {
+        return;
       }
+
+      const fog =
+        document.getElementById("fog");
+
+      const mapRect =
+        document
+          .getElementById("realMap")
+          .getBoundingClientRect();
+
+      const gradients =
+        exploredPoints.map(point => {
+
+          const latLng =
+            L.latLng(
+              point.lat,
+              point.lon
+            );
+
+          const pixel =
+            map.latLngToContainerPoint(
+              latLng
+            );
+
+          const x =
+            pixel.x /
+            mapRect.width *
+            100;
+
+          const y =
+            pixel.y /
+            mapRect.height *
+            100;
+
+          return `
+            radial-gradient(
+              circle 35px at ${x}% ${y}%,
+              transparent 0%,
+              transparent 45%,
+              black 100%
+            )
+          `;
+
+        });
+
+
+      fog.style.background =
+        `
+        ${gradients.join(",")},
+        rgba(0,0,0,0.96)
+        `;
+
+    }
+
+
+    // =========================
+    // GPS成功
+    // =========================
+
+    function success(position) {
+
+      const lat =
+        position.coords.latitude;
+
+      const lon =
+        position.coords.longitude;
+
 
       // 初回
       if (!lastPosition) {
+
         lastPosition = {
           lat: lat,
           lon: lon
         };
 
-        map.setView([lat, lon], 17);
+        exploredPoints.push({
+          lat: lat,
+          lon: lon
+        });
 
-        // 最初の場所を塗る
-        addWalkedArea(lat, lon);
+        map.setView(
+          [lat, lon],
+          17
+        );
+
+        updateFog();
 
         return;
       }
 
-      // 前回地点からの距離
-      const distance = calculateDistance(
-        lastPosition.lat,
-        lastPosition.lon,
-        lat,
-        lon
-      );
 
-      // GPSが大きく飛んだ場合は無視
+      // 移動距離
+      const distance =
+        calculateDistance(
+          lastPosition.lat,
+          lastPosition.lon,
+          lat,
+          lon
+        );
+
+
+      // GPSが飛んだ場合
       if (distance > 100) {
         return;
       }
 
+
       // 3m以上移動したら記録
       if (distance >= 3) {
+
         totalDistance += distance;
 
-        document.getElementById("distance").textContent =
-          Math.round(totalDistance);
+        document.getElementById(
+          "distance"
+        ).textContent =
+          Math.round(
+            totalDistance
+          );
+
 
         lastPosition = {
           lat: lat,
           lon: lon
         };
 
-        // 歩いた場所を塗る
-        addWalkedArea(lat, lon);
+
+        exploredPoints.push({
+          lat: lat,
+          lon: lon
+        });
+
+
+        updateFog();
+
       }
+
     }
 
-    // 歩いた場所を塗る
-    function addWalkedArea(lat, lon) {
 
-      // 半径15mの円を描く
-      L.circle([lat, lon], {
-        radius: 15,
-        color: "#32a852",
-        fillColor: "#32a852",
-        fillOpacity: 0.45,
-        weight: 1
-      }).addTo(walkedLayer);
-
-      const points =
-        walkedLayer.getLayers().length;
-
-      document.getElementById("points").textContent = points;
-    }
-
+    // =========================
     // GPSエラー
-    function error(err) {
-      console.log(err);
+    // =========================
+
+    function error() {
 
       alert(
         "現在地を取得できませんでした。\n" +
-        "ブラウザの位置情報を許可しているか確認してください。"
+        "ブラウザの位置情報を許可してください。"
       );
+
     }
 
+
+    // =========================
     // 歩き始める
-    document.getElementById("startBtn").addEventListener(
-      "click",
-      function () {
+    // =========================
 
-        if (!walking) {
+    document
+      .getElementById("startBtn")
+      .addEventListener(
+        "click",
+        function() {
 
-          if (!navigator.geolocation) {
-            alert("このブラウザではGPSが使えません。");
-            return;
+          if (!walking) {
+
+            if (
+              !navigator.geolocation
+            ) {
+
+              alert(
+                "このブラウザではGPSが使えません。"
+              );
+
+              return;
+            }
+
+
+            walking = true;
+
+            this.textContent =
+              "歩くのを停止";
+
+
+            watchId =
+              navigator.geolocation.watchPosition(
+                success,
+                error,
+                {
+                  enableHighAccuracy: true,
+                  maximumAge: 3000,
+                  timeout: 10000
+                }
+              );
+
           }
 
-          walking = true;
+          else {
 
-          this.textContent = "歩くのを停止";
+            walking = false;
 
-          watchId = navigator.geolocation.watchPosition(
-            success,
-            error,
-            {
-              enableHighAccuracy: true,
-              maximumAge: 3000,
-              timeout: 10000
+            this.textContent =
+              "歩き始める";
+
+
+            if (
+              watchId !== null
+            ) {
+
+              navigator.geolocation.clearWatch(
+                watchId
+              );
+
+              watchId = null;
+
             }
-          );
 
-        } else {
+          }
+
+        }
+      );
+
+
+    // =========================
+    // リセット
+    // =========================
+
+    document
+      .getElementById("resetBtn")
+      .addEventListener(
+        "click",
+        function() {
+
+          if (
+            watchId !== null
+          ) {
+
+            navigator.geolocation.clearWatch(
+              watchId
+            );
+
+            watchId = null;
+
+          }
+
 
           walking = false;
 
-          this.textContent = "歩き始める";
+          document.getElementById(
+            "startBtn"
+          ).textContent =
+            "歩き始める";
 
-          if (watchId !== null) {
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
-          }
+
+          lastPosition = null;
+
+          totalDistance = 0;
+
+          exploredPoints.length = 0;
+
+
+          document.getElementById(
+            "distance"
+          ).textContent = "0";
+
+
+          document.getElementById(
+            "fog"
+          ).style.background =
+            "rgba(0,0,0,0.96)";
+
         }
-      }
+      );
+
+
+    // 地図を動かしたときも霧を再計算
+    map.on(
+      "move",
+      updateFog
     );
 
-    // 現在地へ
-    document.getElementById("locationBtn").addEventListener(
-      "click",
-      function () {
-
-        if (!navigator.geolocation) {
-          alert("GPSが使えません。");
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          function (position) {
-
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-
-            map.setView([lat, lon], 17);
-
-            if (currentMarker) {
-              currentMarker.setLatLng([lat, lon]);
-            } else {
-              currentMarker = L.marker([lat, lon])
-                .addTo(map)
-                .bindPopup("現在地");
-            }
-          },
-          error,
-          {
-            enableHighAccuracy: true
-          }
-        );
-      }
+    map.on(
+      "zoom",
+      updateFog
     );
 
-    // リセット
-    document.getElementById("resetBtn").addEventListener(
-      "click",
-      function () {
-
-        walkedLayer.clearLayers();
-
-        totalDistance = 0;
-        lastPosition = null;
-
-        document.getElementById("distance").textContent = "0";
-        document.getElementById("points").textContent = "0";
-
-        if (currentMarker) {
-          map.removeLayer(currentMarker);
-          currentMarker = null;
-        }
-      }
-    );
   </script>
 
 </body>
