@@ -6,6 +6,7 @@
 
   <title>WALKING MAP</title>
 
+  <!-- Leaflet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -33,6 +34,10 @@
       background: #111;
     }
 
+    /* ========================================
+       MAP
+    ======================================== */
+
     #map {
       position: relative;
       width: 100%;
@@ -40,21 +45,13 @@
       overflow: hidden;
     }
 
-    /* =========================
-       地図
-    ========================= */
-
     #mapLayer {
       position: absolute;
       inset: 0;
       z-index: 1;
     }
 
-    /*
-      このキャンバスが
-      「まだ探索していない場所」の
-      モノクロ部分になる
-    */
+    /* 未探索エリアを覆うキャンバス */
 
     #fogCanvas {
       position: absolute;
@@ -68,9 +65,9 @@
       pointer-events: none;
     }
 
-    /* =========================
-       ゲームUI
-    ========================= */
+    /* ========================================
+       GAME UI
+    ======================================== */
 
     #gameUI {
       position: absolute;
@@ -81,9 +78,9 @@
       pointer-events: none;
     }
 
-    /* =========================
-       タイトル
-    ========================= */
+    /* ========================================
+       TITLE
+    ======================================== */
 
     #titleBox {
       position: absolute;
@@ -104,12 +101,12 @@
 
       border:
         2px solid
-        rgba(255,255,255,0.75);
+        rgba(255, 255, 255, 0.75);
 
       border-radius: 12px;
 
       box-shadow:
-        0 4px 16px rgba(0,0,0,0.35);
+        0 4px 16px rgba(0, 0, 0, 0.35);
 
       backdrop-filter: blur(6px);
     }
@@ -117,7 +114,6 @@
     #title {
       font-size: 18px;
       font-weight: 900;
-
       letter-spacing: 2px;
     }
 
@@ -131,9 +127,9 @@
       letter-spacing: 1px;
     }
 
-    /* =========================
-       ステータス
-    ========================= */
+    /* ========================================
+       LEVEL / XP
+    ======================================== */
 
     #statusBox {
       position: absolute;
@@ -148,16 +144,16 @@
       color: white;
 
       background:
-        rgba(20,24,30,0.92);
+        rgba(20, 24, 30, 0.92);
 
       border:
         2px solid
-        rgba(255,255,255,0.7);
+        rgba(255, 255, 255, 0.7);
 
       border-radius: 12px;
 
       box-shadow:
-        0 4px 16px rgba(0,0,0,0.35);
+        0 4px 16px rgba(0, 0, 0, 0.35);
 
       backdrop-filter: blur(6px);
     }
@@ -181,7 +177,8 @@
 
       margin-top: 6px;
 
-      background: rgba(255,255,255,0.15);
+      background:
+        rgba(255, 255, 255, 0.15);
 
       border-radius: 10px;
 
@@ -202,9 +199,9 @@
       transition: width 0.3s;
     }
 
-    /* =========================
-       距離
-    ========================= */
+    /* ========================================
+       DISTANCE
+    ======================================== */
 
     #distanceBox {
       position: absolute;
@@ -217,16 +214,16 @@
       color: white;
 
       background:
-        rgba(20,24,30,0.88);
+        rgba(20, 24, 30, 0.88);
 
       border:
         2px solid
-        rgba(255,255,255,0.65);
+        rgba(255, 255, 255, 0.65);
 
       border-radius: 12px;
 
       box-shadow:
-        0 4px 15px rgba(0,0,0,0.3);
+        0 4px 15px rgba(0, 0, 0, 0.3);
 
       backdrop-filter: blur(5px);
     }
@@ -247,9 +244,9 @@
       font-weight: 900;
     }
 
-    /* =========================
-       状態表示
-    ========================= */
+    /* ========================================
+       MESSAGE
+    ======================================== */
 
     #message {
       position: absolute;
@@ -264,7 +261,7 @@
       color: white;
 
       background:
-        rgba(20,24,30,0.82);
+        rgba(20, 24, 30, 0.82);
 
       border-radius: 20px;
 
@@ -275,9 +272,9 @@
       backdrop-filter: blur(5px);
     }
 
-    /* =========================
-       ボタン
-    ========================= */
+    /* ========================================
+       BUTTONS
+    ======================================== */
 
     #controls {
       position: absolute;
@@ -295,20 +292,20 @@
     }
 
     button {
-      min-width: 135px;
+      min-width: 125px;
 
-      padding: 12px 18px;
+      padding: 12px 15px;
 
       border:
         2px solid
-        rgba(255,255,255,0.8);
+        rgba(255, 255, 255, 0.8);
 
       border-radius: 13px;
 
       color: white;
 
       background:
-        rgba(20,24,30,0.92);
+        rgba(20, 24, 30, 0.92);
 
       font-size: 14px;
       font-weight: 800;
@@ -316,7 +313,7 @@
       cursor: pointer;
 
       box-shadow:
-        0 4px 14px rgba(0,0,0,0.35);
+        0 4px 14px rgba(0, 0, 0, 0.35);
 
       transition:
         transform 0.15s,
@@ -327,28 +324,46 @@
       transform: translateY(-2px);
 
       background:
-        rgba(50,55,65,0.95);
+        rgba(50, 55, 65, 0.95);
     }
 
     button:active {
       transform: translateY(1px);
     }
 
+    /* 探索開始中 */
+
     #startButton.active {
       background:
-        rgba(35,120,75,0.95);
+        rgba(35, 120, 75, 0.95);
 
       border-color:
-        rgba(150,255,190,0.9);
+        rgba(150, 255, 190, 0.9);
     }
+
+    /* 現在地ボタン */
+
+    #locationButton {
+      min-width: 110px;
+    }
+
+    #locationButton.active {
+      background:
+        rgba(45, 105, 160, 0.95);
+
+      border-color:
+        rgba(150, 220, 255, 0.9);
+    }
+
+    /* リセット */
 
     #resetButton {
       min-width: 90px;
     }
 
-    /* =========================
-       現在地
-    ========================= */
+    /* ========================================
+       PLAYER
+    ======================================== */
 
     .player-icon {
       width: 26px;
@@ -367,29 +382,32 @@
         3px solid white;
 
       box-shadow:
-        0 0 0 5px rgba(84,185,255,0.25),
-        0 0 18px rgba(84,185,255,0.8);
+        0 0 0 5px
+        rgba(84, 185, 255, 0.25),
+
+        0 0 18px
+        rgba(84, 185, 255, 0.8);
     }
 
-    /* =========================
-       Leaflet
-    ========================= */
+    /* ========================================
+       LEAFLET
+    ======================================== */
 
     .leaflet-control-attribution {
       font-size: 9px !important;
 
       background:
-        rgba(255,255,255,0.78) !important;
+        rgba(255, 255, 255, 0.78) !important;
     }
 
     .leaflet-control-zoom {
       box-shadow:
-        0 3px 10px rgba(0,0,0,0.25);
+        0 3px 10px rgba(0, 0, 0, 0.25);
     }
 
-    /* =========================
-       スマホ
-    ========================= */
+    /* ========================================
+       SMARTPHONE
+    ======================================== */
 
     @media (max-width: 600px) {
 
@@ -439,9 +457,13 @@
 
         flex: 1;
 
-        padding: 12px 8px;
+        padding: 12px 6px;
 
-        font-size: 13px;
+        font-size: 12px;
+      }
+
+      #locationButton {
+        min-width: 0;
       }
     }
   </style>
@@ -454,17 +476,28 @@
     <!-- 地図 -->
     <div id="mapLayer"></div>
 
-    <!-- 未探索部分を覆うキャンバス -->
+    <!-- 未探索エリア -->
     <canvas id="fogCanvas"></canvas>
 
     <!-- ゲームUI -->
     <div id="gameUI">
 
+      <!-- タイトル -->
+
       <div id="titleBox">
-        <div id="title">WALKING MAP</div>
-        <div id="subtitle">REAL WORLD EXPLORATION</div>
+
+        <div id="title">
+          WALKING MAP
+        </div>
+
+        <div id="subtitle">
+          REAL WORLD EXPLORATION
+        </div>
+
       </div>
 
+
+      <!-- レベル・XP -->
 
       <div id="statusBox">
 
@@ -483,6 +516,8 @@
       </div>
 
 
+      <!-- 距離 -->
+
       <div id="distanceBox">
 
         <div id="distanceLabel">
@@ -496,15 +531,23 @@
       </div>
 
 
+      <!-- メッセージ -->
+
       <div id="message">
-        「歩き始める」で探索開始
+        「探索開始」で冒険を始めよう
       </div>
 
+
+      <!-- ボタン -->
 
       <div id="controls">
 
         <button id="startButton">
           🚶 探索開始
+        </button>
+
+        <button id="locationButton">
+          📍 現在地
         </button>
 
         <button id="resetButton">
@@ -517,6 +560,8 @@
 
   </div>
 
+
+  <!-- Leaflet -->
 
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
@@ -533,9 +578,9 @@
       [35.681236, 139.767125];
 
 
-    /*
-      地図
-    */
+    /* ========================================
+       MAP
+    ======================================== */
 
     const map =
       L.map("mapLayer", {
@@ -546,14 +591,15 @@
       );
 
 
-    /*
-      国土地理院 淡色地図
-    */
+    /* ========================================
+       国土地理院 淡色地図
+    ======================================== */
 
     L.tileLayer(
       "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png",
       {
         maxZoom: 18,
+
         maxNativeZoom: 18,
 
         detectRetina: true,
@@ -565,7 +611,7 @@
 
 
     /* ========================================
-       Canvas
+       CANVAS
     ======================================== */
 
     const canvas =
@@ -574,9 +620,7 @@
       );
 
     const ctx =
-      canvas.getContext(
-        "2d"
-      );
+      canvas.getContext("2d");
 
 
     function resizeCanvas() {
@@ -626,30 +670,23 @@
     let playerMarker = null;
 
 
-    /*
-      ゲームデータ
-    */
+    /* ========================================
+       GAME DATA
+    ======================================== */
 
     let xp = 0;
 
     let level = 1;
 
 
-    /*
-      1m歩くごとに1XP
-    */
+    /* ========================================
+       XP
+    ======================================== */
 
     function addXP(distance) {
 
       xp += distance;
 
-
-      /*
-        レベルアップに必要なXP
-        LEVEL 1 → 100
-        LEVEL 2 → 200
-        LEVEL 3 → 300 ...
-      */
 
       while (
         xp >= level * 100
@@ -670,7 +707,7 @@
 
 
     /* ========================================
-       レベルアップ表示
+       LEVEL UP
     ======================================== */
 
     function showLevelUp() {
@@ -704,7 +741,7 @@
 
 
     /* ========================================
-       UI更新
+       GAME UI
     ======================================== */
 
     function updateGameUI() {
@@ -747,7 +784,7 @@
 
 
     /* ========================================
-       距離計算
+       DISTANCE CALCULATION
     ======================================== */
 
     function getDistance(
@@ -792,7 +829,7 @@
 
 
     /* ========================================
-       距離表示
+       DISTANCE UI
     ======================================== */
 
     function updateDistance() {
@@ -823,7 +860,7 @@
 
 
     /* ========================================
-       ステータス
+       MESSAGE
     ======================================== */
 
     function setMessage(text) {
@@ -838,7 +875,7 @@
 
 
     /* ========================================
-       現在地マーカー
+       PLAYER MARKER
     ======================================== */
 
     function updatePlayerMarker(
@@ -870,6 +907,7 @@
             [lat, lon],
             {
               icon: icon,
+
               zIndexOffset: 1000
             }
           ).addTo(map);
@@ -886,7 +924,7 @@
 
 
     /* ========================================
-       探索範囲を描画
+       FOG / EXPLORED AREA
     ======================================== */
 
     function redrawFog() {
@@ -902,13 +940,14 @@
         width <= 0 ||
         height <= 0
       ) {
+
         return;
+
       }
 
 
       /*
-        まず画面全体を
-        モノクロっぽい色で覆う
+        未探索エリアを覆う
       */
 
       ctx.globalCompositeOperation =
@@ -929,7 +968,6 @@
 
       /*
         ここから透明化
-        → 下のカラー地図が見える
       */
 
       ctx.globalCompositeOperation =
@@ -949,7 +987,7 @@
 
 
       /*
-        探索ルートを描く
+        実際に歩いたルートを描く
       */
 
       ctx.beginPath();
@@ -967,7 +1005,9 @@
             );
 
 
-          if (index === 0) {
+          if (
+            index === 0
+          ) {
 
             ctx.moveTo(
               pixel.x,
@@ -988,7 +1028,7 @@
 
 
       /*
-        道を太めに開放
+        探索した道の幅
       */
 
       ctx.lineWidth = 55;
@@ -1001,9 +1041,7 @@
 
 
       /*
-        各地点も丸く開放する
-        GPSが飛び飛びでも
-        地図が途切れにくくなる
+        GPS地点も少し広げる
       */
 
       exploredPoints.forEach(
@@ -1034,10 +1072,6 @@
       );
 
 
-      /*
-        透明化終了
-      */
-
       ctx.globalCompositeOperation =
         "source-over";
 
@@ -1045,7 +1079,7 @@
 
 
     /* ========================================
-       GPS
+       GPS START
     ======================================== */
 
     function startTracking() {
@@ -1063,7 +1097,9 @@
       }
 
 
-      if (watchId !== null) {
+      if (
+        watchId !== null
+      ) {
 
         setMessage(
           "すでに探索中です"
@@ -1102,7 +1138,7 @@
 
 
             /*
-              現在地
+              現在地マーカー
             */
 
             updatePlayerMarker(
@@ -1112,7 +1148,7 @@
 
 
             /*
-              初回
+              初回GPS
             */
 
             if (
@@ -1152,8 +1188,7 @@
 
 
             /*
-              GPSが突然飛んだ場合
-              無視する
+              GPSの異常なジャンプを無視
             */
 
             if (
@@ -1166,7 +1201,7 @@
 
 
             /*
-              3m以上動いたら記録
+              3m以上移動したら記録
             */
 
             if (
@@ -1177,16 +1212,28 @@
                 distance;
 
 
+              /*
+                XP獲得
+              */
+
               addXP(
                 distance
               );
 
+
+              /*
+                最新位置更新
+              */
 
               lastPosition = {
                 lat,
                 lon
               };
 
+
+              /*
+                探索ルートに追加
+              */
 
               exploredPoints.push({
                 lat,
@@ -1246,7 +1293,7 @@
 
 
     /* ========================================
-       探索開始
+       探索開始ボタン
     ======================================== */
 
     document
@@ -1260,7 +1307,109 @@
 
 
     /* ========================================
-       リセット
+       現在地へ移動
+    ======================================== */
+
+    document
+      .getElementById(
+        "locationButton"
+      )
+      .addEventListener(
+        "click",
+        () => {
+
+          /*
+            まだGPSを取得していない
+          */
+
+          if (
+            !lastPosition
+          ) {
+
+            setMessage(
+              "現在地を取得しています……"
+            );
+
+
+            /*
+              探索が始まっていなければ
+              GPSを開始
+            */
+
+            if (
+              watchId === null
+            ) {
+
+              startTracking();
+
+            }
+
+
+            return;
+
+          }
+
+
+          /*
+            現在地へ移動
+          */
+
+          map.flyTo(
+            [
+              lastPosition.lat,
+              lastPosition.lon
+            ],
+
+            17,
+
+            {
+              animate: true,
+
+              duration: 1
+            }
+
+          );
+
+
+          /*
+            ボタンを一時的に強調
+          */
+
+          const button =
+            document.getElementById(
+              "locationButton"
+            );
+
+
+          button.classList.add(
+            "active"
+          );
+
+
+          setTimeout(
+            () => {
+
+              button.classList.remove(
+                "active"
+              );
+
+            },
+
+            1000
+
+          );
+
+
+          setMessage(
+            "現在地に移動しました"
+          );
+
+        }
+      );
+
+
+    /* ========================================
+       RESET
     ======================================== */
 
     document
@@ -1293,6 +1442,27 @@
           level = 1;
 
 
+          /*
+            GPS追跡も停止
+          */
+
+          if (
+            watchId !== null
+          ) {
+
+            navigator.geolocation.clearWatch(
+              watchId
+            );
+
+            watchId = null;
+
+          }
+
+
+          /*
+            現在地マーカー削除
+          */
+
           if (
             playerMarker
           ) {
@@ -1306,11 +1476,24 @@
           }
 
 
+          /*
+            UI更新
+          */
+
           updateDistance();
 
           updateGameUI();
 
           redrawFog();
+
+
+          document
+            .getElementById(
+              "startButton"
+            )
+            .classList.remove(
+              "active"
+            );
 
 
           setMessage(
@@ -1322,7 +1505,7 @@
 
 
     /* ========================================
-       地図移動・ズーム
+       MAP MOVE
     ======================================== */
 
     map.on(
@@ -1338,7 +1521,7 @@
 
 
     /* ========================================
-       ウィンドウサイズ
+       WINDOW RESIZE
     ======================================== */
 
     window.addEventListener(
@@ -1348,7 +1531,7 @@
 
 
     /* ========================================
-       初期化
+       INITIALIZE
     ======================================== */
 
     resizeCanvas();
