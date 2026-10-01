@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>歩いた土地を塗る</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6f4;
+      color: #222;
+    }
+
+    .app {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-top: 0;
+    }
+
+    .map {
+      position: relative;
+      width: 100%;
+      height: 420px;
+      margin-top: 20px;
+      background:
+        linear-gradient(30deg, transparent 48%, #d2d6d2 49%, #d2d6d2 51%, transparent 52%),
+        linear-gradient(120deg, transparent 48%, #d2d6d2 49%, #d2d6d2 51%, transparent 52%),
+        #e8ebe8;
+      background-size: 100px 100px;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 2px solid #d5d9d5;
+    }
+
+    .river {
+      position: absolute;
+      width: 130%;
+      height: 80px;
+      background: #cfe4ea;
+      top: 50px;
+      left: -15%;
+      transform: rotate(-8deg);
+      border-radius: 50%;
+    }
+
+    .route {
+      position: absolute;
+      width: 5px;
+      height: 0;
+      background: #3d9b59;
+      left: 25%;
+      top: 75%;
+      transform-origin: top center;
+      transform: rotate(-35deg);
+      border-radius: 10px;
+      transition: height 0.5s ease;
+    }
+
+    .location {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: #26753c;
+      border: 3px solid white;
+      border-radius: 50%;
+      left: 25%;
+      top: 75%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 2px 8px #555;
+      transition: left 0.5s ease, top 0.5s ease;
+    }
+
+    .start {
+      position: absolute;
+      left: 20px;
+      bottom: 20px;
+      background: white;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .stat {
+      background: white;
+      padding: 15px;
+      border-radius: 14px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+
+    .stat-title {
+      color: #777;
+      font-size: 13px;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: #2f8f4e;
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #26783f;
+    }
+
+    button.reset {
+      background: #777;
+    }
+
+    button.reset:hover {
+      background: #666;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 500px) {
+      .app {
+        padding: 15px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .map {
+        height: 350px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+
+    <h1>歩いた土地を、塗っていこう。</h1>
+    <p class="subtitle">あなたの旅の足跡を地図に残そう。</p>
+
+    <div class="map">
+
+      <div class="river"></div>
+
+      <div class="route" id="route"></div>
+
+      <div class="location" id="location"></div>
+
+      <div class="start">
+        📍 START
+      </div>
+
+    </div>
+
+    <div class="stats">
+
+      <div class="stat">
+        <div class="stat-title">歩いた距離</div>
+        <div class="stat-value">
+          <span id="distance">0.0</span> km
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-title">歩いた時間</div>
+        <div class="stat-value">
+          <span id="time">0</span> 分
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-title">今日の記録</div>
+        <div class="stat-value">
+          <span id="steps">0</span> m
+        </div>
+      </div>
+
+    </div>
+
+    <div class="buttons">
+
+      <button id="startButton">
+        ▶ 歩き始める
+      </button>
+
+      <button id="walkButton">
+        ＋ 歩く
+      </button>
+
+      <button id="resetButton" class="reset">
+        ↺ リセット
+      </button>
+
+    </div>
+
+    <div class="status" id="status">
+      停止中
+    </div>
+
+  </div>
+
+
+  <script>
+
+    let walking = false;
+    let distance = 0;
+    let time = 0;
+    let steps = 0;
+    let progress = 0;
+
+    const startButton = document.getElementById("startButton");
+    const walkButton = document.getElementById("walkButton");
+    const resetButton = document.getElementById("resetButton");
+
+    const distanceText = document.getElementById("distance");
+    const timeText = document.getElementById("time");
+    const stepsText = document.getElementById("steps");
+
+    const status = document.getElementById("status");
+
+    const route = document.getElementById("route");
+    const locationPoint = document.getElementById("location");
+
+    startButton.addEventListener("click", function() {
+
+      walking = !walking;
+
+      if (walking) {
+        startButton.textContent = "Ⅱ 一時停止";
+        status.textContent = "歩行中";
+      } else {
+        startButton.textContent = "▶ 歩き始める";
+        status.textContent = "一時停止中";
+      }
+
+    });
+
+
+    walkButton.addEventListener("click", function() {
+
+      if (!walking) {
+        status.textContent = "先に「歩き始める」を押してください";
+        return;
+      }
+
+      distance += 0.1;
+      steps += 100;
+      time += 1;
+      progress += 8;
+
+      if (progress > 100) {
+        progress = 100;
+      }
+
+      distanceText.textContent = distance.toFixed(1);
+      timeText.textContent = time;
+      stepsText.textContent = steps;
+
+      route.style.height = progress * 2.5 + "px";
+
+      locationPoint.style.top = (75 - progress * 0.45) + "%";
+      locationPoint.style.left = (25 + progress * 0.55) + "%";
+
+      if (progress >= 100) {
+        status.textContent = "目的地に到着しました！";
+      }
+
+    });
+
+
+    resetButton.addEventListener("click", function() {
+
+      walking = false;
+      distance = 0;
+      time = 0;
+      steps = 0;
+      progress = 0;
+
+      distanceText.textContent = "0.0";
+      timeText.textContent = "0";
+      stepsText.textContent = "0";
+
+      route.style.height = "0px";
+
+      locationPoint.style.top = "75%";
+      locationPoint.style.left = "25%";
+
+      startButton.textContent = "▶ 歩き始める";
+      status.textContent = "停止中";
+
+    });
+
+  </script>
+
+</body>
+</html>
