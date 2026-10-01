@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>歩いた土地マップ</title>
+  <title>WALKING MAP</title>
 
   <link
     rel="stylesheet"
@@ -16,255 +16,741 @@
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
-      font-family: sans-serif;
-      background: #f4f4f4;
-      color: #222;
-    }
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
 
-    h1 {
-      text-align: center;
-      margin: 15px 0 5px;
-    }
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Noto Sans JP",
+        sans-serif;
 
-    #info {
-      text-align: center;
-      margin-bottom: 10px;
-      font-size: 16px;
+      background: #111;
     }
 
     #map {
       position: relative;
       width: 100%;
-      height: 70vh;
+      height: 100%;
       overflow: hidden;
     }
 
-    /*
-      下：カラーの本物の地図
-    */
-    #colorMap {
+    /* =========================
+       地図
+    ========================= */
+
+    #mapLayer {
       position: absolute;
       inset: 0;
       z-index: 1;
     }
 
     /*
-      上：モノクロの地図
+      このキャンバスが
+      「まだ探索していない場所」の
+      モノクロ部分になる
     */
-    #grayMap {
+
+    #fogCanvas {
       position: absolute;
       inset: 0;
-      z-index: 2;
 
-      filter: grayscale(100%) brightness(0.9);
+      width: 100%;
+      height: 100%;
 
-      /*
-        最初は全面モノクロ。
-        GPSで歩いた場所だけ透明にする。
-      */
-      mask-image: radial-gradient(
-        circle at 50% 50%,
-        transparent 0px,
-        transparent 0px,
-        black 1px
-      );
+      z-index: 500;
 
-      -webkit-mask-image: radial-gradient(
-        circle at 50% 50%,
-        transparent 0px,
-        transparent 0px,
-        black 1px
-      );
+      pointer-events: none;
     }
 
-    .buttons {
-      text-align: center;
-      padding: 12px;
+    /* =========================
+       ゲームUI
+    ========================= */
+
+    #gameUI {
+      position: absolute;
+      inset: 0;
+
+      z-index: 1000;
+
+      pointer-events: none;
+    }
+
+    /* =========================
+       タイトル
+    ========================= */
+
+    #titleBox {
+      position: absolute;
+
+      top: 16px;
+      left: 16px;
+
+      padding: 10px 15px;
+
+      color: white;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(20, 24, 30, 0.94),
+          rgba(35, 40, 48, 0.88)
+        );
+
+      border:
+        2px solid
+        rgba(255,255,255,0.75);
+
+      border-radius: 12px;
+
+      box-shadow:
+        0 4px 16px rgba(0,0,0,0.35);
+
+      backdrop-filter: blur(6px);
+    }
+
+    #title {
+      font-size: 18px;
+      font-weight: 900;
+
+      letter-spacing: 2px;
+    }
+
+    #subtitle {
+      margin-top: 2px;
+
+      font-size: 10px;
+
+      opacity: 0.65;
+
+      letter-spacing: 1px;
+    }
+
+    /* =========================
+       ステータス
+    ========================= */
+
+    #statusBox {
+      position: absolute;
+
+      top: 16px;
+      right: 16px;
+
+      width: 150px;
+
+      padding: 10px 12px;
+
+      color: white;
+
+      background:
+        rgba(20,24,30,0.92);
+
+      border:
+        2px solid
+        rgba(255,255,255,0.7);
+
+      border-radius: 12px;
+
+      box-shadow:
+        0 4px 16px rgba(0,0,0,0.35);
+
+      backdrop-filter: blur(6px);
+    }
+
+    #levelText {
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    #xpText {
+      margin-top: 4px;
+
+      font-size: 10px;
+
+      opacity: 0.7;
+    }
+
+    #xpBar {
+      width: 100%;
+      height: 6px;
+
+      margin-top: 6px;
+
+      background: rgba(255,255,255,0.15);
+
+      border-radius: 10px;
+
+      overflow: hidden;
+    }
+
+    #xpProgress {
+      width: 0%;
+      height: 100%;
+
+      background:
+        linear-gradient(
+          90deg,
+          #5bbcff,
+          #8be0ff
+        );
+
+      transition: width 0.3s;
+    }
+
+    /* =========================
+       距離
+    ========================= */
+
+    #distanceBox {
+      position: absolute;
+
+      left: 16px;
+      bottom: 95px;
+
+      padding: 9px 14px;
+
+      color: white;
+
+      background:
+        rgba(20,24,30,0.88);
+
+      border:
+        2px solid
+        rgba(255,255,255,0.65);
+
+      border-radius: 12px;
+
+      box-shadow:
+        0 4px 15px rgba(0,0,0,0.3);
+
+      backdrop-filter: blur(5px);
+    }
+
+    #distanceLabel {
+      font-size: 9px;
+
+      opacity: 0.6;
+
+      letter-spacing: 1px;
+    }
+
+    #distance {
+      margin-top: 1px;
+
+      font-size: 20px;
+
+      font-weight: 900;
+    }
+
+    /* =========================
+       状態表示
+    ========================= */
+
+    #message {
+      position: absolute;
+
+      left: 50%;
+      bottom: 95px;
+
+      transform: translateX(-50%);
+
+      padding: 7px 13px;
+
+      color: white;
+
+      background:
+        rgba(20,24,30,0.82);
+
+      border-radius: 20px;
+
+      font-size: 11px;
+
+      white-space: nowrap;
+
+      backdrop-filter: blur(5px);
+    }
+
+    /* =========================
+       ボタン
+    ========================= */
+
+    #controls {
+      position: absolute;
+
+      left: 50%;
+      bottom: 20px;
+
+      transform: translateX(-50%);
+
+      display: flex;
+
+      gap: 8px;
+
+      pointer-events: auto;
     }
 
     button {
-      font-size: 16px;
-      padding: 11px 18px;
-      margin: 4px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
+      min-width: 135px;
 
-    #startBtn {
-      background: #32a852;
+      padding: 12px 18px;
+
+      border:
+        2px solid
+        rgba(255,255,255,0.8);
+
+      border-radius: 13px;
+
       color: white;
-    }
 
-    #resetBtn {
-      background: #777;
-      color: white;
-    }
+      background:
+        rgba(20,24,30,0.92);
 
-    #status {
-      text-align: center;
       font-size: 14px;
-      color: #666;
-      padding-bottom: 10px;
+      font-weight: 800;
+
+      cursor: pointer;
+
+      box-shadow:
+        0 4px 14px rgba(0,0,0,0.35);
+
+      transition:
+        transform 0.15s,
+        background 0.15s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+
+      background:
+        rgba(50,55,65,0.95);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    #startButton.active {
+      background:
+        rgba(35,120,75,0.95);
+
+      border-color:
+        rgba(150,255,190,0.9);
+    }
+
+    #resetButton {
+      min-width: 90px;
+    }
+
+    /* =========================
+       現在地
+    ========================= */
+
+    .player-icon {
+      width: 26px;
+      height: 26px;
+
+      border-radius: 50%;
+
+      background:
+        radial-gradient(
+          circle,
+          #ffffff 0 20%,
+          #54b9ff 21% 100%
+        );
+
+      border:
+        3px solid white;
+
+      box-shadow:
+        0 0 0 5px rgba(84,185,255,0.25),
+        0 0 18px rgba(84,185,255,0.8);
+    }
+
+    /* =========================
+       Leaflet
+    ========================= */
+
+    .leaflet-control-attribution {
+      font-size: 9px !important;
+
+      background:
+        rgba(255,255,255,0.78) !important;
+    }
+
+    .leaflet-control-zoom {
+      box-shadow:
+        0 3px 10px rgba(0,0,0,0.25);
+    }
+
+    /* =========================
+       スマホ
+    ========================= */
+
+    @media (max-width: 600px) {
+
+      #titleBox {
+        top: 10px;
+        left: 10px;
+      }
+
+      #statusBox {
+        top: 10px;
+        right: 10px;
+
+        width: 130px;
+      }
+
+      #title {
+        font-size: 15px;
+      }
+
+      #subtitle {
+        font-size: 9px;
+      }
+
+      #distanceBox {
+        left: 10px;
+        bottom: 88px;
+      }
+
+      #message {
+        bottom: 88px;
+
+        max-width: 65%;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      #controls {
+        width:
+          calc(100% - 20px);
+
+        bottom: 12px;
+      }
+
+      button {
+        min-width: 0;
+
+        flex: 1;
+
+        padding: 12px 8px;
+
+        font-size: 13px;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <h1>歩いた土地マップ</h1>
-
-  <div id="info">
-    探索距離：
-    <strong><span id="distance">0</span></strong> m
-  </div>
-
   <div id="map">
 
-    <!-- カラー地図 -->
-    <div id="colorMap"></div>
+    <!-- 地図 -->
+    <div id="mapLayer"></div>
 
-    <!-- モノクロ地図 -->
-    <div id="grayMap"></div>
+    <!-- 未探索部分を覆うキャンバス -->
+    <canvas id="fogCanvas"></canvas>
+
+    <!-- ゲームUI -->
+    <div id="gameUI">
+
+      <div id="titleBox">
+        <div id="title">WALKING MAP</div>
+        <div id="subtitle">REAL WORLD EXPLORATION</div>
+      </div>
+
+
+      <div id="statusBox">
+
+        <div id="levelText">
+          LEVEL 1
+        </div>
+
+        <div id="xpText">
+          XP 0 / 100
+        </div>
+
+        <div id="xpBar">
+          <div id="xpProgress"></div>
+        </div>
+
+      </div>
+
+
+      <div id="distanceBox">
+
+        <div id="distanceLabel">
+          WALK DISTANCE
+        </div>
+
+        <div id="distance">
+          0 m
+        </div>
+
+      </div>
+
+
+      <div id="message">
+        「歩き始める」で探索開始
+      </div>
+
+
+      <div id="controls">
+
+        <button id="startButton">
+          🚶 探索開始
+        </button>
+
+        <button id="resetButton">
+          リセット
+        </button>
+
+      </div>
+
+    </div>
 
   </div>
 
-  <div class="buttons">
 
-    <button id="startBtn">
-      歩き始める
-    </button>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+  </script>
 
-    <button id="resetBtn">
-      リセット
-    </button>
-
-  </div>
-
-  <div id="status">
-    「歩き始める」を押すと、歩いた場所がカラーになります。
-  </div>
-
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
 
-    // =====================================
-    // カラー地図
-    // =====================================
+    /* ========================================
+       基本設定
+    ======================================== */
 
-    const colorMap = L.map("colorMap", {
-      zoomControl: false
-    }).setView(
-      [35.681236, 139.767125],
-      15
-    );
+    const initialPosition =
+      [35.681236, 139.767125];
 
 
-    // =====================================
-    // モノクロ地図
-    // =====================================
+    /*
+      地図
+    */
 
-    const grayMap = L.map("grayMap", {
-      zoomControl: false,
-      attributionControl: false
-    }).setView(
-      [35.681236, 139.767125],
-      15
-    );
-
-
-    // =====================================
-    // OpenStreetMap
-    // =====================================
-
-    const tileUrl =
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-
-
-    L.tileLayer(tileUrl, {
-      attribution:
-        "&copy; OpenStreetMap contributors"
-    }).addTo(colorMap);
-
-
-    L.tileLayer(tileUrl).addTo(grayMap);
-
-
-    // =====================================
-    // 2つの地図を同期
-    // =====================================
-
-    let syncing = false;
-
-
-    colorMap.on("move", function () {
-
-      if (syncing) return;
-
-      syncing = true;
-
-      grayMap.setView(
-        colorMap.getCenter(),
-        colorMap.getZoom(),
-        {
-          animate: false
-        }
+    const map =
+      L.map("mapLayer", {
+        zoomControl: true
+      }).setView(
+        initialPosition,
+        15
       );
 
-      syncing = false;
 
-      updateExploredArea();
+    /*
+      国土地理院 淡色地図
+    */
 
-    });
+    L.tileLayer(
+      "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png",
+      {
+        maxZoom: 18,
+        maxNativeZoom: 18,
+
+        detectRetina: true,
+
+        attribution:
+          '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'
+      }
+    ).addTo(map);
 
 
-    grayMap.on("move", function () {
+    /* ========================================
+       Canvas
+    ======================================== */
 
-      if (syncing) return;
-
-      syncing = true;
-
-      colorMap.setView(
-        grayMap.getCenter(),
-        grayMap.getZoom(),
-        {
-          animate: false
-        }
+    const canvas =
+      document.getElementById(
+        "fogCanvas"
       );
 
-      syncing = false;
+    const ctx =
+      canvas.getContext(
+        "2d"
+      );
 
-      updateExploredArea();
 
-    });
+    function resizeCanvas() {
+
+      const rect =
+        canvas.getBoundingClientRect();
 
 
-    // =====================================
-    // GPS
-    // =====================================
+      const dpr =
+        window.devicePixelRatio || 1;
 
-    let watchId = null;
 
-    let walking = false;
+      canvas.width =
+        rect.width * dpr;
 
-    let lastPosition = null;
+      canvas.height =
+        rect.height * dpr;
+
+
+      ctx.setTransform(
+        dpr,
+        0,
+        0,
+        dpr,
+        0,
+        0
+      );
+
+
+      redrawFog();
+
+    }
+
+
+    /* ========================================
+       探索データ
+    ======================================== */
+
+    let exploredPoints = [];
 
     let totalDistance = 0;
 
+    let lastPosition = null;
 
-    // 歩いた場所
-    const exploredPoints = [];
+    let watchId = null;
+
+    let playerMarker = null;
 
 
-    // =====================================
-    // 距離計算
-    // =====================================
+    /*
+      ゲームデータ
+    */
 
-    function calculateDistance(
+    let xp = 0;
+
+    let level = 1;
+
+
+    /*
+      1m歩くごとに1XP
+    */
+
+    function addXP(distance) {
+
+      xp += distance;
+
+
+      /*
+        レベルアップに必要なXP
+        LEVEL 1 → 100
+        LEVEL 2 → 200
+        LEVEL 3 → 300 ...
+      */
+
+      while (
+        xp >= level * 100
+      ) {
+
+        xp -= level * 100;
+
+        level++;
+
+        showLevelUp();
+
+      }
+
+
+      updateGameUI();
+
+    }
+
+
+    /* ========================================
+       レベルアップ表示
+    ======================================== */
+
+    function showLevelUp() {
+
+      const message =
+        document.getElementById(
+          "message"
+        );
+
+
+      message.textContent =
+        `LEVEL UP!  LEVEL ${level}`;
+
+
+      setTimeout(() => {
+
+        if (
+          message.textContent.startsWith(
+            "LEVEL UP"
+          )
+        ) {
+
+          message.textContent =
+            "探索を続けよう！";
+
+        }
+
+      }, 2500);
+
+    }
+
+
+    /* ========================================
+       UI更新
+    ======================================== */
+
+    function updateGameUI() {
+
+      document
+        .getElementById(
+          "levelText"
+        )
+        .textContent =
+          `LEVEL ${level}`;
+
+
+      const required =
+        level * 100;
+
+
+      document
+        .getElementById(
+          "xpText"
+        )
+        .textContent =
+          `XP ${Math.floor(xp)} / ${required}`;
+
+
+      const percentage =
+        Math.min(
+          100,
+          xp / required * 100
+        );
+
+
+      document
+        .getElementById(
+          "xpProgress"
+        )
+        .style.width =
+          percentage + "%";
+
+    }
+
+
+    /* ========================================
+       距離計算
+    ======================================== */
+
+    function getDistance(
       lat1,
       lon1,
       lat2,
@@ -273,19 +759,24 @@
 
       const R = 6371000;
 
-      const rad = Math.PI / 180;
+      const rad =
+        Math.PI / 180;
+
 
       const dLat =
         (lat2 - lat1) * rad;
 
+
       const dLon =
         (lon2 - lon1) * rad;
+
 
       const a =
         Math.sin(dLat / 2) ** 2 +
         Math.cos(lat1 * rad) *
         Math.cos(lat2 * rad) *
         Math.sin(dLon / 2) ** 2;
+
 
       const c =
         2 *
@@ -294,398 +785,577 @@
           Math.sqrt(1 - a)
         );
 
+
       return R * c;
 
     }
 
 
-    // =====================================
-    // 歩いた場所をカラーにする
-    // =====================================
+    /* ========================================
+       距離表示
+    ======================================== */
 
-    function updateExploredArea() {
+    function updateDistance() {
+
+      const element =
+        document.getElementById(
+          "distance"
+        );
+
+
+      if (
+        totalDistance < 1000
+      ) {
+
+        element.textContent =
+          `${Math.round(totalDistance)} m`;
+
+      } else {
+
+        element.textContent =
+          `${(
+            totalDistance / 1000
+          ).toFixed(2)} km`;
+
+      }
+
+    }
+
+
+    /* ========================================
+       ステータス
+    ======================================== */
+
+    function setMessage(text) {
+
+      document
+        .getElementById(
+          "message"
+        )
+        .textContent = text;
+
+    }
+
+
+    /* ========================================
+       現在地マーカー
+    ======================================== */
+
+    function updatePlayerMarker(
+      lat,
+      lon
+    ) {
+
+      const icon =
+        L.divIcon({
+
+          className: "",
+
+          html:
+            '<div class="player-icon"></div>',
+
+          iconSize:
+            [26, 26],
+
+          iconAnchor:
+            [13, 13]
+
+        });
+
+
+      if (!playerMarker) {
+
+        playerMarker =
+          L.marker(
+            [lat, lon],
+            {
+              icon: icon,
+              zIndexOffset: 1000
+            }
+          ).addTo(map);
+
+      } else {
+
+        playerMarker.setLatLng(
+          [lat, lon]
+        );
+
+      }
+
+    }
+
+
+    /* ========================================
+       探索範囲を描画
+    ======================================== */
+
+    function redrawFog() {
+
+      const width =
+        canvas.clientWidth;
+
+      const height =
+        canvas.clientHeight;
+
+
+      if (
+        width <= 0 ||
+        height <= 0
+      ) {
+        return;
+      }
+
+
+      /*
+        まず画面全体を
+        モノクロっぽい色で覆う
+      */
+
+      ctx.globalCompositeOperation =
+        "source-over";
+
+
+      ctx.fillStyle =
+        "rgba(55, 55, 60, 0.72)";
+
+
+      ctx.fillRect(
+        0,
+        0,
+        width,
+        height
+      );
+
+
+      /*
+        ここから透明化
+        → 下のカラー地図が見える
+      */
+
+      ctx.globalCompositeOperation =
+        "destination-out";
+
 
       if (
         exploredPoints.length === 0
       ) {
 
-        grayMap.getContainer().style.maskImage =
-          "none";
-
-        grayMap.getContainer().style.webkitMaskImage =
-          "none";
+        ctx.globalCompositeOperation =
+          "source-over";
 
         return;
 
       }
 
 
-      const mapElement =
-        grayMap.getContainer();
+      /*
+        探索ルートを描く
+      */
 
-      const rect =
-        mapElement.getBoundingClientRect();
-
-
-      const gradients =
-        exploredPoints.map(
-          point => {
-
-            const pixel =
-              grayMap.latLngToContainerPoint(
-                [
-                  point.lat,
-                  point.lon
-                ]
-              );
+      ctx.beginPath();
 
 
-            const x =
-              (
-                pixel.x /
-                rect.width *
-                100
-              ).toFixed(2);
+      exploredPoints.forEach(
+        (point, index) => {
+
+          const pixel =
+            map.latLngToContainerPoint(
+              [
+                point.lat,
+                point.lon
+              ]
+            );
 
 
-            const y =
-              (
-                pixel.y /
-                rect.height *
-                100
-              ).toFixed(2);
+          if (index === 0) {
+
+            ctx.moveTo(
+              pixel.x,
+              pixel.y
+            );
+
+          } else {
+
+            ctx.lineTo(
+              pixel.x,
+              pixel.y
+            );
+
+          }
+
+        }
+      );
+
+
+      /*
+        道を太めに開放
+      */
+
+      ctx.lineWidth = 55;
+
+      ctx.lineCap = "round";
+
+      ctx.lineJoin = "round";
+
+      ctx.stroke();
+
+
+      /*
+        各地点も丸く開放する
+        GPSが飛び飛びでも
+        地図が途切れにくくなる
+      */
+
+      exploredPoints.forEach(
+        point => {
+
+          const pixel =
+            map.latLngToContainerPoint(
+              [
+                point.lat,
+                point.lon
+              ]
+            );
+
+
+          ctx.beginPath();
+
+          ctx.arc(
+            pixel.x,
+            pixel.y,
+            28,
+            0,
+            Math.PI * 2
+          );
+
+          ctx.fill();
+
+        }
+      );
+
+
+      /*
+        透明化終了
+      */
+
+      ctx.globalCompositeOperation =
+        "source-over";
+
+    }
+
+
+    /* ========================================
+       GPS
+    ======================================== */
+
+    function startTracking() {
+
+      if (
+        !navigator.geolocation
+      ) {
+
+        setMessage(
+          "このブラウザではGPSを利用できません"
+        );
+
+        return;
+
+      }
+
+
+      if (watchId !== null) {
+
+        setMessage(
+          "すでに探索中です"
+        );
+
+        return;
+
+      }
+
+
+      setMessage(
+        "探索中……歩いた道が開放されます"
+      );
+
+
+      document
+        .getElementById(
+          "startButton"
+        )
+        .classList.add(
+          "active"
+        );
+
+
+      watchId =
+        navigator.geolocation.watchPosition(
+
+          position => {
+
+            const lat =
+              position.coords.latitude;
+
+
+            const lon =
+              position.coords.longitude;
 
 
             /*
-              ここが「カラーになる範囲」
-
-              35px → かなり狭い
-              50px → 標準
-              70px → 広め
+              現在地
             */
 
-            return `
-              radial-gradient(
-                circle 55px at ${x}% ${y}%,
-                transparent 0%,
-                transparent 70%,
-                black 100%
-              )
-            `;
-
-          }
-        );
+            updatePlayerMarker(
+              lat,
+              lon
+            );
 
 
-      /*
-        複数のGPS地点をつなげる
-      */
-
-      const mask =
-        gradients.join(", ");
-
-
-      grayMap.getContainer().style.maskImage =
-        mask;
-
-      grayMap.getContainer().style.webkitMaskImage =
-        mask;
-
-    }
-
-
-    // =====================================
-    // GPS成功
-    // =====================================
-
-    function success(position) {
-
-      const lat =
-        position.coords.latitude;
-
-      const lon =
-        position.coords.longitude;
-
-
-      // 初回GPS
-      if (!lastPosition) {
-
-        lastPosition = {
-          lat: lat,
-          lon: lon
-        };
-
-
-        exploredPoints.push({
-          lat: lat,
-          lon: lon
-        });
-
-
-        colorMap.setView(
-          [lat, lon],
-          17
-        );
-
-
-        grayMap.setView(
-          [lat, lon],
-          17
-        );
-
-
-        updateExploredArea();
-
-        document.getElementById(
-          "status"
-        ).textContent =
-          "現在地を取得しました。歩いてみよう！";
-
-        return;
-
-      }
-
-
-      // 前回地点からの距離
-      const distance =
-        calculateDistance(
-          lastPosition.lat,
-          lastPosition.lon,
-          lat,
-          lon
-        );
-
-
-      /*
-        GPSが突然100m以上飛んだ場合は
-        誤差として無視
-      */
-
-      if (distance > 100) {
-        return;
-      }
-
-
-      /*
-        3m以上移動したら記録
-      */
-
-      if (distance >= 3) {
-
-        totalDistance += distance;
-
-
-        document.getElementById(
-          "distance"
-        ).textContent =
-          Math.round(
-            totalDistance
-          );
-
-
-        lastPosition = {
-          lat: lat,
-          lon: lon
-        };
-
-
-        exploredPoints.push({
-          lat: lat,
-          lon: lon
-        });
-
-
-        updateExploredArea();
-
-
-        document.getElementById(
-          "status"
-        ).textContent =
-          "歩いた場所がカラーになっています。";
-
-      }
-
-    }
-
-
-    // =====================================
-    // GPSエラー
-    // =====================================
-
-    function error() {
-
-      document.getElementById(
-        "status"
-      ).textContent =
-        "GPSを取得できませんでした。位置情報の許可を確認してください。";
-
-    }
-
-
-    // =====================================
-    // 歩き始める
-    // =====================================
-
-    document
-      .getElementById("startBtn")
-      .addEventListener(
-        "click",
-        function () {
-
-
-          if (!walking) {
+            /*
+              初回
+            */
 
             if (
-              !navigator.geolocation
+              !lastPosition
             ) {
 
-              alert(
-                "このブラウザではGPSが使えません。"
-              );
+              lastPosition = {
+                lat,
+                lon
+              };
+
+
+              exploredPoints.push({
+                lat,
+                lon
+              });
+
+
+              redrawFog();
 
               return;
 
             }
 
 
-            walking = true;
+            /*
+              前回地点との距離
+            */
 
-
-            this.textContent =
-              "歩くのを停止";
-
-
-            document.getElementById(
-              "status"
-            ).textContent =
-              "GPSを取得中……";
-
-
-            watchId =
-              navigator.geolocation.watchPosition(
-                success,
-                error,
-                {
-                  enableHighAccuracy: true,
-                  maximumAge: 3000,
-                  timeout: 10000
-                }
+            const distance =
+              getDistance(
+                lastPosition.lat,
+                lastPosition.lon,
+                lat,
+                lon
               );
 
-          }
 
-
-          else {
-
-            walking = false;
-
-
-            this.textContent =
-              "歩き始める";
-
+            /*
+              GPSが突然飛んだ場合
+              無視する
+            */
 
             if (
-              watchId !== null
+              distance > 100
             ) {
 
-              navigator.geolocation.clearWatch(
-                watchId
-              );
-
-              watchId = null;
+              return;
 
             }
 
 
-            document.getElementById(
-              "status"
-            ).textContent =
-              "記録を停止しました。";
+            /*
+              3m以上動いたら記録
+            */
 
+            if (
+              distance >= 3
+            ) {
+
+              totalDistance +=
+                distance;
+
+
+              addXP(
+                distance
+              );
+
+
+              lastPosition = {
+                lat,
+                lon
+              };
+
+
+              exploredPoints.push({
+                lat,
+                lon
+              });
+
+
+              updateDistance();
+
+              redrawFog();
+
+            }
+
+          },
+
+
+          error => {
+
+            console.error(
+              error
+            );
+
+
+            if (
+              error.code === 1
+            ) {
+
+              setMessage(
+                "位置情報の利用を許可してください"
+              );
+
+            } else {
+
+              setMessage(
+                "GPSを取得できませんでした"
+              );
+
+            }
+
+          },
+
+
+          {
+            enableHighAccuracy:
+              true,
+
+            maximumAge:
+              3000,
+
+            timeout:
+              10000
           }
 
-        }
+        );
+
+    }
+
+
+    /* ========================================
+       探索開始
+    ======================================== */
+
+    document
+      .getElementById(
+        "startButton"
+      )
+      .addEventListener(
+        "click",
+        startTracking
       );
 
 
-    // =====================================
-    // リセット
-    // =====================================
+    /* ========================================
+       リセット
+    ======================================== */
 
     document
-      .getElementById("resetBtn")
+      .getElementById(
+        "resetButton"
+      )
       .addEventListener(
         "click",
-        function () {
-
+        () => {
 
           if (
-            watchId !== null
+            !confirm(
+              "探索データをすべてリセットしますか？"
+            )
           ) {
 
-            navigator.geolocation.clearWatch(
-              watchId
-            );
-
-            watchId = null;
+            return;
 
           }
 
 
-          walking = false;
-
-
-          document.getElementById(
-            "startBtn"
-          ).textContent =
-            "歩き始める";
-
-
-          lastPosition = null;
-
+          exploredPoints = [];
 
           totalDistance = 0;
 
+          lastPosition = null;
 
-          exploredPoints.length = 0;
+          xp = 0;
 
-
-          document.getElementById(
-            "distance"
-          ).textContent =
-            "0";
+          level = 1;
 
 
-          document.getElementById(
-            "status"
-          ).textContent =
-            "リセットしました。";
+          if (
+            playerMarker
+          ) {
+
+            map.removeLayer(
+              playerMarker
+            );
+
+            playerMarker = null;
+
+          }
 
 
-          grayMap.getContainer().style.maskImage =
-            "none";
+          updateDistance();
 
-          grayMap.getContainer().style.webkitMaskImage =
-            "none";
+          updateGameUI();
+
+          redrawFog();
+
+
+          setMessage(
+            "「探索開始」で新しい冒険を始めよう"
+          );
 
         }
       );
 
 
-    // =====================================
-    // 初期状態
-    // =====================================
+    /* ========================================
+       地図移動・ズーム
+    ======================================== */
 
-    setTimeout(
-      function () {
-
-        colorMap.invalidateSize();
-
-        grayMap.invalidateSize();
-
-      },
-      300
+    map.on(
+      "move",
+      redrawFog
     );
+
+
+    map.on(
+      "zoom",
+      redrawFog
+    );
+
+
+    /* ========================================
+       ウィンドウサイズ
+    ======================================== */
+
+    window.addEventListener(
+      "resize",
+      resizeCanvas
+    );
+
+
+    /* ========================================
+       初期化
+    ======================================== */
+
+    resizeCanvas();
+
+    updateGameUI();
+
+    updateDistance();
 
   </script>
 
