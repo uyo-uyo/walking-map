@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>歩いた土地を塗る</title>
+  <title>歩いた土地マップ</title>
 
   <link
     rel="stylesheet"
@@ -12,787 +11,302 @@
   />
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
       margin: 0;
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      background: #f4f6f4;
-      color: #222;
-    }
-
-    .app {
-      max-width: 900px;
-      margin: auto;
-      padding: 20px;
+      font-family: sans-serif;
+      background: #f5f5f5;
     }
 
     h1 {
-      margin-bottom: 5px;
+      text-align: center;
+      margin: 15px 0 5px;
     }
 
-    .subtitle {
-      color: #666;
-      margin-top: 0;
+    #info {
+      text-align: center;
+      margin-bottom: 10px;
     }
 
     #map {
+      height: 70vh;
       width: 100%;
-      height: 500px;
-      margin-top: 20px;
-      border-radius: 18px;
-      overflow: hidden;
-      border: 2px solid #ddd;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .stat {
-      background: white;
-      padding: 15px;
-      border-radius: 14px;
-      text-align: center;
-      border: 1px solid #ddd;
-    }
-
-    .stat-title {
-      color: #777;
-      font-size: 13px;
-    }
-
-    .stat-value {
-      font-size: 22px;
-      font-weight: bold;
-      margin-top: 5px;
     }
 
     .buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
+      text-align: center;
+      padding: 12px;
     }
 
     button {
-      flex: 1;
-      padding: 14px;
+      font-size: 16px;
+      padding: 10px 16px;
+      margin: 4px;
       border: none;
-      border-radius: 12px;
-      background: #2f8f4e;
-      color: white;
-      font-size: 15px;
-      font-weight: bold;
+      border-radius: 8px;
       cursor: pointer;
     }
 
-    button:hover {
-      background: #26783f;
+    #startBtn {
+      background: #4caf50;
+      color: white;
     }
 
-    button.reset {
+    #locationBtn {
+      background: #2196f3;
+      color: white;
+    }
+
+    #resetBtn {
       background: #777;
-    }
-
-    .status {
-      text-align: center;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-
-    .notice {
-      background: white;
-      padding: 15px;
-      border-radius: 14px;
-      margin-top: 15px;
-      border: 1px solid #ddd;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    @media (max-width: 600px) {
-
-      .app {
-        padding: 12px;
-      }
-
-      #map {
-        height: 450px;
-      }
-
-      .stats {
-        grid-template-columns: 1fr;
-      }
-
-      .buttons {
-        flex-direction: column;
-      }
+      color: white;
     }
   </style>
 </head>
 
 <body>
 
-<div class="app">
+  <h1>🚶 歩いた土地マップ</h1>
 
-  <h1>歩いた土地を、塗っていこう。</h1>
-
-  <p class="subtitle">
-    実際に歩いた道をGPSで記録します。
-  </p>
+  <div id="info">
+    歩いた距離：<span id="distance">0</span> m
+   　
+    塗った地点：<span id="points">0</span>
+  </div>
 
   <div id="map"></div>
 
-  <div class="stats">
-
-    <div class="stat">
-      <div class="stat-title">
-        歩いた距離
-      </div>
-
-      <div class="stat-value">
-        <span id="distance">0.00</span> km
-      </div>
-    </div>
-
-    <div class="stat">
-      <div class="stat-title">
-        記録時間
-      </div>
-
-      <div class="stat-value">
-        <span id="time">0</span> 分
-      </div>
-    </div>
-
-    <div class="stat">
-      <div class="stat-title">
-        GPSポイント
-      </div>
-
-      <div class="stat-value">
-        <span id="points">0</span>
-      </div>
-    </div>
-
-  </div>
-
   <div class="buttons">
-
-    <button id="startButton">
-      ▶ 歩き始める
-    </button>
-
-    <button id="locationButton">
-      📍 現在地へ
-    </button>
-
-    <button id="resetButton" class="reset">
-      ↺ リセット
-    </button>
-
+    <button id="startBtn">歩き始める</button>
+    <button id="locationBtn">現在地へ</button>
+    <button id="resetBtn">リセット</button>
   </div>
 
-  <div class="status" id="status">
-    停止中
-  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <div class="notice">
-    初めて使うときは、ブラウザから位置情報の使用許可を求められます。
-    「許可」を選択してください。
-  </div>
+  <script>
+    // 東京駅を最初の表示位置にする
+    const map = L.map("map").setView([35.681236, 139.767125], 15);
 
-</div>
+    // OpenStreetMap
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        attribution: "&copy; OpenStreetMap contributors"
+      }
+    ).addTo(map);
 
+    let watchId = null;
+    let walking = false;
+    let lastPosition = null;
+    let totalDistance = 0;
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    // 歩いた場所を入れるレイヤー
+    const walkedLayer = L.layerGroup().addTo(map);
 
+    // 現在地マーカー
+    let currentMarker = null;
 
-<script>
+    // 距離計算
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
 
-  /*
-   * 地図
-   */
+      const rad = Math.PI / 180;
 
-  const map = L.map("map").setView(
-    [35.681236, 139.767125],
-    15
-  );
+      const dLat = (lat2 - lat1) * rad;
+      const dLon = (lon2 - lon1) * rad;
 
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * rad) *
+        Math.cos(lat2 * rad) *
+        Math.sin(dLon / 2) ** 2;
 
-  /*
-   * OpenStreetMap
-   */
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-      maxZoom: 19,
-
-      attribution:
-        "&copy; OpenStreetMap contributors"
+      return R * c;
     }
-  ).addTo(map);
 
+    // GPS成功
+    function success(position) {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
 
-  /*
-   * 歩いたルート
-   */
+      // 現在地マーカー
+      if (currentMarker) {
+        currentMarker.setLatLng([lat, lon]);
+      } else {
+        currentMarker = L.marker([lat, lon])
+          .addTo(map)
+          .bindPopup("現在地");
+      }
 
-  const routeLine = L.polyline(
-    [],
-    {
-      color: "#2f8f4e",
-      weight: 7,
-      opacity: 0.85
-    }
-  ).addTo(map);
+      // 初回
+      if (!lastPosition) {
+        lastPosition = {
+          lat: lat,
+          lon: lon
+        };
 
+        map.setView([lat, lon], 17);
 
-  /*
-   * 現在地マーカー
-   */
+        // 最初の場所を塗る
+        addWalkedArea(lat, lon);
 
-  let currentMarker = null;
+        return;
+      }
 
-
-  /*
-   * GPS関連
-   */
-
-  let watchId = null;
-
-  let walking = false;
-
-  let route = [];
-
-  let totalDistance = 0;
-
-  let startTime = null;
-
-  let timerId = null;
-
-
-  /*
-   * HTML要素
-   */
-
-  const startButton =
-    document.getElementById("startButton");
-
-  const locationButton =
-    document.getElementById("locationButton");
-
-  const resetButton =
-    document.getElementById("resetButton");
-
-  const distanceText =
-    document.getElementById("distance");
-
-  const timeText =
-    document.getElementById("time");
-
-  const pointsText =
-    document.getElementById("points");
-
-  const status =
-    document.getElementById("status");
-
-
-  /*
-   * 2地点間の距離を計算
-   *
-   * GPSの緯度・経度から
-   * メートル単位の距離を求める。
-   */
-
-  function calculateDistance(
-    lat1,
-    lon1,
-    lat2,
-    lon2
-  ) {
-
-    const R = 6371000;
-
-    const rad =
-      Math.PI / 180;
-
-    const dLat =
-      (lat2 - lat1) * rad;
-
-    const dLon =
-      (lon2 - lon1) * rad;
-
-    const a =
-      Math.sin(dLat / 2) *
-      Math.sin(dLat / 2) +
-
-      Math.cos(lat1 * rad) *
-      Math.cos(lat2 * rad) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-    const c =
-      2 *
-      Math.atan2(
-        Math.sqrt(a),
-        Math.sqrt(1 - a)
+      // 前回地点からの距離
+      const distance = calculateDistance(
+        lastPosition.lat,
+        lastPosition.lon,
+        lat,
+        lon
       );
 
-    return R * c;
-  }
-
-
-  /*
-   * GPSから位置情報を受け取ったとき
-   */
-
-  function handlePosition(position) {
-
-    const latitude =
-      position.coords.latitude;
-
-    const longitude =
-      position.coords.longitude;
-
-
-    const newPoint = [
-      latitude,
-      longitude
-    ];
-
-
-    /*
-     * 前回の位置があれば
-     * 距離を計算
-     */
-
-    if (route.length > 0) {
-
-      const lastPoint =
-        route[route.length - 1];
-
-      const distance =
-        calculateDistance(
-          lastPoint[0],
-          lastPoint[1],
-          latitude,
-          longitude
-        );
-
-
-      /*
-       * GPSの誤差による
-       * 異常なジャンプを無視
-       *
-       * 1回で100m以上移動した場合は
-       * 今回は記録しない。
-       */
-
+      // GPSが大きく飛んだ場合は無視
       if (distance > 100) {
-
         return;
-
       }
 
+      // 3m以上移動したら記録
+      if (distance >= 3) {
+        totalDistance += distance;
 
-      totalDistance += distance;
+        document.getElementById("distance").textContent =
+          Math.round(totalDistance);
 
-      distanceText.textContent =
-        (totalDistance / 1000).toFixed(2);
+        lastPosition = {
+          lat: lat,
+          lon: lon
+        };
+
+        // 歩いた場所を塗る
+        addWalkedArea(lat, lon);
+      }
     }
 
+    // 歩いた場所を塗る
+    function addWalkedArea(lat, lon) {
 
-    /*
-     * ルートに追加
-     */
+      // 半径15mの円を描く
+      L.circle([lat, lon], {
+        radius: 15,
+        color: "#32a852",
+        fillColor: "#32a852",
+        fillOpacity: 0.45,
+        weight: 1
+      }).addTo(walkedLayer);
 
-    route.push(newPoint);
+      const points =
+        walkedLayer.getLayers().length;
 
+      document.getElementById("points").textContent = points;
+    }
 
-    /*
-     * 地図上の緑色の線を更新
-     */
+    // GPSエラー
+    function error(err) {
+      console.log(err);
 
-    routeLine.setLatLngs(route);
+      alert(
+        "現在地を取得できませんでした。\n" +
+        "ブラウザの位置情報を許可しているか確認してください。"
+      );
+    }
 
+    // 歩き始める
+    document.getElementById("startBtn").addEventListener(
+      "click",
+      function () {
 
-    /*
-     * 現在地マーカー
-     */
+        if (!walking) {
 
-    if (currentMarker === null) {
-
-      currentMarker =
-        L.circleMarker(
-          newPoint,
-          {
-            radius: 9,
-            color: "#ffffff",
-            weight: 3,
-            fillColor: "#2f8f4e",
-            fillOpacity: 1
+          if (!navigator.geolocation) {
+            alert("このブラウザではGPSが使えません。");
+            return;
           }
-        ).addTo(map);
 
-    } else {
+          walking = true;
 
-      currentMarker.setLatLng(
-        newPoint
-      );
+          this.textContent = "歩くのを停止";
 
-    }
-
-
-    /*
-     * 現在地へ移動
-     */
-
-    map.panTo(newPoint);
-
-
-    /*
-     * GPSポイント数
-     */
-
-    pointsText.textContent =
-      route.length;
-
-
-    status.textContent =
-      "GPSで位置を記録中";
-  }
-
-
-  /*
-   * GPSエラー
-   */
-
-  function handleError(error) {
-
-    console.log(error);
-
-
-    if (error.code === 1) {
-
-      status.textContent =
-        "位置情報の使用が許可されていません";
-
-    } else if (error.code === 2) {
-
-      status.textContent =
-        "現在地を取得できません";
-
-    } else if (error.code === 3) {
-
-      status.textContent =
-        "現在地の取得がタイムアウトしました";
-
-    } else {
-
-      status.textContent =
-        "GPSでエラーが発生しました";
-
-    }
-
-  }
-
-
-  /*
-   * 記録時間
-   */
-
-  function updateTime() {
-
-    if (!startTime) {
-      return;
-    }
-
-    const elapsed =
-      Date.now() - startTime;
-
-    const minutes =
-      Math.floor(
-        elapsed / 60000
-      );
-
-    timeText.textContent =
-      minutes;
-  }
-
-
-  /*
-   * 歩き始める
-   */
-
-  startButton.addEventListener(
-    "click",
-    function() {
-
-      if (walking) {
-
-        /*
-         * 一時停止
-         */
-
-        walking = false;
-
-        if (watchId !== null) {
-
-          navigator.geolocation.clearWatch(
-            watchId
+          watchId = navigator.geolocation.watchPosition(
+            success,
+            error,
+            {
+              enableHighAccuracy: true,
+              maximumAge: 3000,
+              timeout: 10000
+            }
           );
 
-          watchId = null;
+        } else {
 
+          walking = false;
+
+          this.textContent = "歩き始める";
+
+          if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+          }
+        }
+      }
+    );
+
+    // 現在地へ
+    document.getElementById("locationBtn").addEventListener(
+      "click",
+      function () {
+
+        if (!navigator.geolocation) {
+          alert("GPSが使えません。");
+          return;
         }
 
-        clearInterval(timerId);
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
 
-        startButton.textContent =
-          "▶ 再開する";
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
 
-        status.textContent =
-          "一時停止中";
+            map.setView([lat, lon], 17);
 
-        return;
-      }
-
-
-      /*
-       * GPSが利用できるか確認
-       */
-
-      if (!navigator.geolocation) {
-
-        status.textContent =
-          "このブラウザではGPSを利用できません";
-
-        return;
-
-      }
-
-
-      /*
-       * 記録開始
-       */
-
-      walking = true;
-
-      startButton.textContent =
-        "Ⅱ 一時停止";
-
-      status.textContent =
-        "GPSを取得しています…";
-
-
-      if (!startTime) {
-
-        startTime =
-          Date.now();
-
-      }
-
-
-      /*
-       * GPSの監視開始
-       */
-
-      watchId =
-        navigator.geolocation.watchPosition(
-
-          handlePosition,
-
-          handleError,
-
+            if (currentMarker) {
+              currentMarker.setLatLng([lat, lon]);
+            } else {
+              currentMarker = L.marker([lat, lon])
+                .addTo(map)
+                .bindPopup("現在地");
+            }
+          },
+          error,
           {
-            enableHighAccuracy: true,
-
-            maximumAge: 3000,
-
-            timeout: 10000
+            enableHighAccuracy: true
           }
-
         );
-
-
-      /*
-       * 時間表示
-       */
-
-      timerId =
-        setInterval(
-          updateTime,
-          1000
-        );
-
-    }
-  );
-
-
-  /*
-   * 現在地へ移動
-   */
-
-  locationButton.addEventListener(
-    "click",
-    function() {
-
-      if (!navigator.geolocation) {
-
-        status.textContent =
-          "GPSを利用できません";
-
-        return;
-
       }
+    );
 
+    // リセット
+    document.getElementById("resetBtn").addEventListener(
+      "click",
+      function () {
 
-      status.textContent =
-        "現在地を取得しています…";
+        walkedLayer.clearLayers();
 
+        totalDistance = 0;
+        lastPosition = null;
 
-      navigator.geolocation.getCurrentPosition(
+        document.getElementById("distance").textContent = "0";
+        document.getElementById("points").textContent = "0";
 
-        function(position) {
-
-          const point = [
-
-            position.coords.latitude,
-
-            position.coords.longitude
-
-          ];
-
-
-          map.setView(
-            point,
-            17
-          );
-
-
-          if (currentMarker === null) {
-
-            currentMarker =
-              L.circleMarker(
-                point,
-                {
-                  radius: 9,
-
-                  color: "#ffffff",
-
-                  weight: 3,
-
-                  fillColor: "#26783f",
-
-                  fillOpacity: 1
-                }
-              ).addTo(map);
-
-          } else {
-
-            currentMarker.setLatLng(
-              point
-            );
-
-          }
-
-
-          status.textContent =
-            "現在地を表示しました";
-
-        },
-
-        handleError,
-
-        {
-          enableHighAccuracy: true,
-
-          timeout: 10000,
-
-          maximumAge: 0
+        if (currentMarker) {
+          map.removeLayer(currentMarker);
+          currentMarker = null;
         }
-
-      );
-
-    }
-  );
-
-
-  /*
-   * リセット
-   */
-
-  resetButton.addEventListener(
-    "click",
-    function() {
-
-      if (watchId !== null) {
-
-        navigator.geolocation.clearWatch(
-          watchId
-        );
-
       }
-
-      clearInterval(timerId);
-
-
-      walking = false;
-
-      watchId = null;
-
-      route = [];
-
-      totalDistance = 0;
-
-      startTime = null;
-
-
-      routeLine.setLatLngs([]);
-
-
-      if (currentMarker !== null) {
-
-        map.removeLayer(
-          currentMarker
-        );
-
-        currentMarker = null;
-
-      }
-
-
-      distanceText.textContent =
-        "0.00";
-
-      timeText.textContent =
-        "0";
-
-      pointsText.textContent =
-        "0";
-
-
-      startButton.textContent =
-        "▶ 歩き始める";
-
-      status.textContent =
-        "停止中";
-
-    }
-  );
-
-</script>
+    );
+  </script>
 
 </body>
 </html>
