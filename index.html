@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>歩いた土地を塗る</title>
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
 
   <style>
     * {
@@ -18,7 +25,7 @@
     }
 
     .app {
-      max-width: 700px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 20px;
     }
@@ -29,71 +36,17 @@
     }
 
     .subtitle {
-      color: #666;
       margin-top: 0;
+      color: #666;
     }
 
-    .map {
-      position: relative;
+    #map {
       width: 100%;
-      height: 420px;
+      height: 500px;
       margin-top: 20px;
-      background:
-        linear-gradient(30deg, transparent 48%, #d2d6d2 49%, #d2d6d2 51%, transparent 52%),
-        linear-gradient(120deg, transparent 48%, #d2d6d2 49%, #d2d6d2 51%, transparent 52%),
-        #e8ebe8;
-      background-size: 100px 100px;
-      border-radius: 20px;
+      border-radius: 18px;
       overflow: hidden;
-      border: 2px solid #d5d9d5;
-    }
-
-    .river {
-      position: absolute;
-      width: 130%;
-      height: 80px;
-      background: #cfe4ea;
-      top: 50px;
-      left: -15%;
-      transform: rotate(-8deg);
-      border-radius: 50%;
-    }
-
-    .route {
-      position: absolute;
-      width: 5px;
-      height: 0;
-      background: #3d9b59;
-      left: 25%;
-      top: 75%;
-      transform-origin: top center;
-      transform: rotate(-35deg);
-      border-radius: 10px;
-      transition: height 0.5s ease;
-    }
-
-    .location {
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      background: #26753c;
-      border: 3px solid white;
-      border-radius: 50%;
-      left: 25%;
-      top: 75%;
-      transform: translate(-50%, -50%);
-      box-shadow: 0 2px 8px #555;
-      transition: left 0.5s ease, top 0.5s ease;
-    }
-
-    .start {
-      position: absolute;
-      left: 20px;
-      bottom: 20px;
-      background: white;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 13px;
+      border: 2px solid #ddd;
     }
 
     .stats {
@@ -148,27 +101,23 @@
       background: #777;
     }
 
-    button.reset:hover {
-      background: #666;
-    }
-
     .status {
       text-align: center;
       margin-top: 15px;
       font-weight: bold;
     }
 
-    @media (max-width: 500px) {
+    @media (max-width: 600px) {
       .app {
-        padding: 15px;
+        padding: 12px;
       }
 
       h1 {
         font-size: 24px;
       }
 
-      .map {
-        height: 350px;
+      #map {
+        height: 450px;
       }
 
       .stats {
@@ -184,164 +133,370 @@
 
 <body>
 
-  <div class="app">
+<div class="app">
 
-    <h1>歩いた土地を、塗っていこう。</h1>
-    <p class="subtitle">あなたの旅の足跡を地図に残そう。</p>
+  <h1>歩いた土地を、塗っていこう。</h1>
 
-    <div class="map">
+  <p class="subtitle">
+    あなたの旅の足跡を地図に残そう。
+  </p>
 
-      <div class="river"></div>
+  <div id="map"></div>
 
-      <div class="route" id="route"></div>
+  <div class="stats">
 
-      <div class="location" id="location"></div>
-
-      <div class="start">
-        📍 START
+    <div class="stat">
+      <div class="stat-title">歩いた距離</div>
+      <div class="stat-value">
+        <span id="distance">0.0</span> km
       </div>
-
     </div>
 
-    <div class="stats">
-
-      <div class="stat">
-        <div class="stat-title">歩いた距離</div>
-        <div class="stat-value">
-          <span id="distance">0.0</span> km
-        </div>
+    <div class="stat">
+      <div class="stat-title">歩いた時間</div>
+      <div class="stat-value">
+        <span id="time">0</span> 分
       </div>
-
-      <div class="stat">
-        <div class="stat-title">歩いた時間</div>
-        <div class="stat-value">
-          <span id="time">0</span> 分
-        </div>
-      </div>
-
-      <div class="stat">
-        <div class="stat-title">今日の記録</div>
-        <div class="stat-value">
-          <span id="steps">0</span> m
-        </div>
-      </div>
-
     </div>
 
-    <div class="buttons">
-
-      <button id="startButton">
-        ▶ 歩き始める
-      </button>
-
-      <button id="walkButton">
-        ＋ 歩く
-      </button>
-
-      <button id="resetButton" class="reset">
-        ↺ リセット
-      </button>
-
-    </div>
-
-    <div class="status" id="status">
-      停止中
+    <div class="stat">
+      <div class="stat-title">記録</div>
+      <div class="stat-value">
+        <span id="steps">0</span> m
+      </div>
     </div>
 
   </div>
 
+  <div class="buttons">
 
-  <script>
+    <button id="startButton">
+      ▶ 歩き始める
+    </button>
 
-    let walking = false;
-    let distance = 0;
-    let time = 0;
-    let steps = 0;
-    let progress = 0;
+    <button id="walkButton">
+      ＋ 歩く
+    </button>
 
-    const startButton = document.getElementById("startButton");
-    const walkButton = document.getElementById("walkButton");
-    const resetButton = document.getElementById("resetButton");
+    <button id="resetButton" class="reset">
+      ↺ リセット
+    </button>
 
-    const distanceText = document.getElementById("distance");
-    const timeText = document.getElementById("time");
-    const stepsText = document.getElementById("steps");
+  </div>
 
-    const status = document.getElementById("status");
+  <div class="status" id="status">
+    停止中
+  </div>
 
-    const route = document.getElementById("route");
-    const locationPoint = document.getElementById("location");
+</div>
 
-    startButton.addEventListener("click", function() {
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+  /*
+   * 地図を作成
+   *
+   * 最初は東京駅付近を表示
+   */
+  const map = L.map("map").setView(
+    [35.681236, 139.767125],
+    15
+  );
+
+
+  /*
+   * OpenStreetMapの地図を表示
+   */
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }
+  ).addTo(map);
+
+
+  /*
+   * 歩いたルートを表示する線
+   */
+  const routeLine = L.polyline(
+    [],
+    {
+      color: "#2f8f4e",
+      weight: 7,
+      opacity: 0.85
+    }
+  ).addTo(map);
+
+
+  /*
+   * 現在地を表すマーカー
+   */
+  const currentMarker = L.circleMarker(
+    [35.681236, 139.767125],
+    {
+      radius: 9,
+      color: "#ffffff",
+      weight: 3,
+      fillColor: "#2f8f4e",
+      fillOpacity: 1
+    }
+  ).addTo(map);
+
+
+  /*
+   * 試作用のルート
+   *
+   * 東京駅周辺を歩いているように見せる
+   */
+  const testRoute = [
+
+    [35.681236, 139.767125],
+
+    [35.682500, 139.768500],
+
+    [35.683500, 139.770000],
+
+    [35.684500, 139.771500],
+
+    [35.685500, 139.773000],
+
+    [35.686500, 139.774500],
+
+    [35.687500, 139.776000]
+
+  ];
+
+
+  let walking = false;
+
+  let routeIndex = 0;
+
+  let distance = 0;
+
+  let time = 0;
+
+  let steps = 0;
+
+
+  const startButton =
+    document.getElementById("startButton");
+
+  const walkButton =
+    document.getElementById("walkButton");
+
+  const resetButton =
+    document.getElementById("resetButton");
+
+  const distanceText =
+    document.getElementById("distance");
+
+  const timeText =
+    document.getElementById("time");
+
+  const stepsText =
+    document.getElementById("steps");
+
+  const status =
+    document.getElementById("status");
+
+
+  /*
+   * 歩き始める
+   */
+  startButton.addEventListener(
+    "click",
+    function() {
 
       walking = !walking;
 
       if (walking) {
-        startButton.textContent = "Ⅱ 一時停止";
-        status.textContent = "歩行中";
+
+        startButton.textContent =
+          "Ⅱ 一時停止";
+
+        status.textContent =
+          "歩行中";
+
       } else {
-        startButton.textContent = "▶ 歩き始める";
-        status.textContent = "一時停止中";
+
+        startButton.textContent =
+          "▶ 歩き始める";
+
+        status.textContent =
+          "一時停止中";
+
       }
 
-    });
+    }
+  );
 
 
-    walkButton.addEventListener("click", function() {
+  /*
+   * 「歩く」ボタン
+   *
+   * 今は試作用。
+   * 後でGPSに置き換える。
+   */
+  walkButton.addEventListener(
+    "click",
+    function() {
 
       if (!walking) {
-        status.textContent = "先に「歩き始める」を押してください";
+
+        status.textContent =
+          "先に「歩き始める」を押してください";
+
         return;
+
       }
 
-      distance += 0.1;
-      steps += 100;
+
+      if (
+        routeIndex >= testRoute.length
+      ) {
+
+        status.textContent =
+          "目的地に到着しました！";
+
+        walking = false;
+
+        startButton.textContent =
+          "▶ もう一度歩く";
+
+        return;
+
+      }
+
+
+      const point =
+        testRoute[routeIndex];
+
+
+      routeIndex++;
+
+
+      /*
+       * ルートに現在地を追加
+       */
+      const currentRoute =
+        testRoute.slice(
+          0,
+          routeIndex
+        );
+
+
+      routeLine.setLatLngs(
+        currentRoute
+      );
+
+
+      /*
+       * 現在地マーカーを移動
+       */
+      currentMarker.setLatLng(
+        point
+      );
+
+
+      /*
+       * 地図を現在地に移動
+       */
+      map.panTo(point);
+
+
+      /*
+       * 数値を更新
+       */
+      distance += 0.12;
+
       time += 1;
-      progress += 8;
 
-      if (progress > 100) {
-        progress = 100;
+      steps += 120;
+
+
+      distanceText.textContent =
+        distance.toFixed(1);
+
+      timeText.textContent =
+        time;
+
+      stepsText.textContent =
+        steps;
+
+
+      if (
+        routeIndex >= testRoute.length
+      ) {
+
+        status.textContent =
+          "目的地に到着しました！";
+
+        walking = false;
+
+        startButton.textContent =
+          "▶ もう一度歩く";
+
       }
 
-      distanceText.textContent = distance.toFixed(1);
-      timeText.textContent = time;
-      stepsText.textContent = steps;
-
-      route.style.height = progress * 2.5 + "px";
-
-      locationPoint.style.top = (75 - progress * 0.45) + "%";
-      locationPoint.style.left = (25 + progress * 0.55) + "%";
-
-      if (progress >= 100) {
-        status.textContent = "目的地に到着しました！";
-      }
-
-    });
+    }
+  );
 
 
-    resetButton.addEventListener("click", function() {
+  /*
+   * リセット
+   */
+  resetButton.addEventListener(
+    "click",
+    function() {
 
       walking = false;
+
+      routeIndex = 0;
+
       distance = 0;
+
       time = 0;
+
       steps = 0;
-      progress = 0;
 
-      distanceText.textContent = "0.0";
-      timeText.textContent = "0";
-      stepsText.textContent = "0";
 
-      route.style.height = "0px";
+      routeLine.setLatLngs([]);
 
-      locationPoint.style.top = "75%";
-      locationPoint.style.left = "25%";
+      currentMarker.setLatLng(
+        testRoute[0]
+      );
 
-      startButton.textContent = "▶ 歩き始める";
-      status.textContent = "停止中";
 
-    });
+      map.setView(
+        [35.681236, 139.767125],
+        15
+      );
 
-  </script>
+
+      distanceText.textContent =
+        "0.0";
+
+      timeText.textContent =
+        "0";
+
+      stepsText.textContent =
+        "0";
+
+
+      startButton.textContent =
+        "▶ 歩き始める";
+
+      status.textContent =
+        "停止中";
+
+    }
+  );
+
+</script>
 
 </body>
 </html>
